@@ -8,7 +8,7 @@ import { authValidator } from "../../middlewares/authValidator";
 
 const codeRouter = express.Router();
 
-codeRouter.use(authValidator as unknown as RequestHandler);
+
 
 
 //add server side data validation, looking around that.
@@ -17,7 +17,7 @@ codeRouter.use(authValidator as unknown as RequestHandler);
 
 //CREATION ROUTES
 
-codeRouter.post("/snippet/create", async (req:Request, res)=>{
+codeRouter.post("/snippet/create",authValidator as RequestHandler, async (req:Request, res)=>{
     try 
     {
         // console.log(req.body);
@@ -26,7 +26,7 @@ codeRouter.post("/snippet/create", async (req:Request, res)=>{
             ...req.body,
             type:"snippet"
         }
-        console.log(dataToStore);
+        // console.log(dataToStore);
         const snippet = await snippetModel.create(dataToStore);
     
         //then index the document in the search engine, and store the docId to avoid using mongo again!
@@ -35,11 +35,12 @@ codeRouter.post("/snippet/create", async (req:Request, res)=>{
             description: snippet.description,
             id:snippet._id.toString(),
             language: snippet.language,
-            type:"snippet"
+            type:"snippet",
+            tags: snippet.tags
         }
-        console.log(snippetToIndex);
+        // console.log(snippetToIndex);
         await indexDocument(snippetToIndex, snippet._id.toString());
-        res.status(201).json({message: "Creation Successfull!"});
+        res.status(201).json({message: "Creation Successfull!", id:snippet._id.toString()});
     }
     catch(err)
     {
@@ -48,8 +49,8 @@ codeRouter.post("/snippet/create", async (req:Request, res)=>{
     }
 })
 
-codeRouter.post("/block/create", async (req:Request, res)=>{
-    console.log(req.body);
+codeRouter.post("/block/create",authValidator as RequestHandler, async (req:Request, res)=>{
+    // console.log(req.body);
     const block = await codeBlockModel.create({...req.body, type:"block"});
 
     const blockToIndex = {
@@ -58,6 +59,7 @@ codeRouter.post("/block/create", async (req:Request, res)=>{
         language: block.language,
         totalSnippets: block.snippets.length,
         type:"block",
+        tags: block.tags,
         id:block._id.toString()
     }
 
